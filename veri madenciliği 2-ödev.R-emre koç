@@ -1,0 +1,144 @@
+library(MASS) # Rastgele veri oluşturmak için kütüphanemi yükledim.
+library(zoo)
+library(corrplot)
+library(caTools)
+### veri setini oluşturma
+set.seed(123) 
+n <- 100 
+## bağımsız değişkenleri bulma 
+x1 <- rnorm(n, mean = 8, sd = 2)
+x2 <- rnorm(n, mean = 5, sd = 1)
+x3 <- rnorm(n, mean = 3, sd = 0.5)
+x4 <- rnorm(n, mean = 6, sd = 1.5)
+x5 <- rnorm(n, mean = 10, sd = 3)
+x6 <- rnorm(n, mean = 8, sd = 2)
+## bağımlı değişken 
+y <- 3 + 2*x1 - 1.5*x2 + 0.5*x3 + 1.8*x4 - 1.2*x5 + 0.8*x6 + rnorm(n, mean = 0, sd = 2)
+
+##Veri çerçevesi
+data <- data.frame(y, x1, x2, x3, x4, x5, x6)
+head(data)
+## değişkenlerimi dönüştürdüm
+x1_f <- rnorm(n, mean = 8, sd = 2)
+x2_f <- rnorm(n, mean = 5, sd = 1)
+x1_f_factor  <- as.factor(x1_f)
+x2_f_numeric <- as.numeric(x2_f)
+##verinin genel bir özetine str ile baktım
+str(x1_f_factor)
+str(x2_f_numeric)
+## Eksik veriyi kontrol ve doldurma işlemi yaptım.
+set.seed(123)
+x1_tt <- rnorm(n, mean = 10, sd = 2)
+x2_tt <- rnorm(n, mean = 5,  sd = 1)
+y_tt  <- rnorm(n, mean = 3 + 2*x1_tt - 1.5*x2_tt, sd = 2)
+## eksik veri var mı yok mu ona baktım
+is_na_x1 <- is.na(x1_tt)
+is_na_x2 <- is.na(x2_tt)
+##ortalama ile doldurma 
+mean_x1_tt <- mean(x1_tt, na.rm = TRUE)
+x1_filled  <- ifelse(is.na(x1_tt), mean_x1_tt, x1_tt)
+### LOCF yöntemi kullandım. Yukarıdaki  zoo kütüphanemden 
+##na.locf()veri setlerindeki eksik değerleri (NA) 
+##bir önceki geçerli (NA olmayan) değerle doldurdum.
+vec        <- c(1, NA, NA, 4, NA, 6, NA, 8, NA)
+vec_filled <- na.locf(vec)
+print(vec_filled)
+
+x2_filled <- na.locf(x2_tt)
+median_y_tt <- median(y_tt, na.rm = TRUE)
+y_filled    <- ifelse(is.na(y_tt), median_y_tt, y_tt)
+
+## aykırı değerleri buldum.
+set.seed(123)
+data_aykiri <- rnorm(100)
+boxplot(data_aykiri, main = "Kutu Grafigi")
+## z puanını bulalım 
+z_scores     <- scale(data_aykiri)
+outliers_z   <- abs(z_scores) > 3
+summary(z_scores )
+### IQR yöntemini kullanalım.
+Q1           <- quantile(data_aykiri, 0.25)
+Q3           <- quantile(data_aykiri, 0.75)
+IQR_val      <- Q3 - Q1
+lower_bound  <- Q1 - 1.5 * IQR_val
+upper_bound  <- Q3 + 1.5 * IQR_val
+outliers_iqr <- data_aykiri < lower_bound | data_aykiri > upper_bound
+summary(outliers_iqr)
+## dağılımı görselleştirme 
+set.seed(123)
+data_dagilim <- rnorm(100)
+### histogram grafiği çizdirelim.
+hist(data_dagilim, main = "Histogram", xlab = "Deger", col = "steelblue")
+###Şimdi kutu grafiğimizi çizdirelim.
+boxplot(data_dagilim, main = "Kutu Grafigi")
+### Q-Q plot grafiğimizi çizelim şimdi de
+qnorm(data_dagilim)
+qqline(data_dagilim)
+### özete bakalım bir de 
+summary(data_dagilim)
+
+##Korelasyona bakalım. 
+set.seed(123)
+x <- rnorm(100)
+y <- 2*x + rnorm(100, mean = 0, sd = 0.5)
+
+
+correlation <- cor(x, y)
+print(correlation)
+
+##çoklu korelasyona bakalım.
+set.seed(123)
+x1 <- rnorm(100)
+x2 <- rnorm(100)
+x3 <- rnorm(100)
+y  <- 2*x1 + 3*x2 - 1.5*x3 + rnorm(100, mean = 0, sd = 0.5)
+correlation_matrix <- cor(data.frame(x1, x2, x3))
+print(correlation_matrix)
+
+###Şimdi bu üçlü korelasyon matrisimizi bakalım.
+mtrx <- lm(y ~ x1 + x2 + x3)
+summary(mtrx)
+
+## Korelasyon matrisini görselleştirme yaptım.
+par(mfrow = c(1, 3))
+plot(x1, y, main = "x1 vs y", xlab = "x1", ylab = "y", col = "green",  pch = 16)
+plot(x2, y, main = "x2 vs y", xlab = "x2", ylab = "y", col = "red",   pch = 16)
+plot(x3, y, main = "x3 vs y", xlab = "x3", ylab = "y", col = "orange", pch = 16)
+par(mfrow = c(1, 1))
+
+## Standartlaştırma yaptım.
+
+x1_standardized <- scale(x1)
+x2_standardized <- scale(x2)
+x3_standardized <- scale(x3)
+y_standardized  <- scale(y)
+
+summary(x1_standardized)
+summary(x2_standardized)
+summary(x3_standardized)
+summary(y_standardized)
+sd(y_standardized)
+
+
+set.seed(123)
+x1 <- rnorm(100)
+x2 <- rnorm(100)
+x3 <- rnorm(100)
+y  <- 2*x1 + 3*x2 - 1.5*x3 + rnorm(100, mean = 0, sd = 0.5)
+
+## veri grubumu %70 eğitim , %30 test olarak böldüm
+split      <- sample.split(y, SplitRatio = 0.7)
+train_data <- subset(data.frame(x1, x2, x3, y), split == TRUE)
+test_data  <- subset(data.frame(x1, x2, x3, y), split == FALSE)
+
+dim(train_data)
+dim(test_data)
+
+
+
+
+
+
+
+
+
